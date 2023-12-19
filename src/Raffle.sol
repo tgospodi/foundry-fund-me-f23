@@ -70,6 +70,7 @@ contract Raffle is VRFConsumerBaseV2 {
     /** Events */
     event EnteredRaffle(address indexed players);
     event PickedWinner(address indexed winner);
+    event RequestedRaffleWinner(uint256 indexed requestId);
 
     constructor(
         uint256 entranceFee,
@@ -89,7 +90,8 @@ contract Raffle is VRFConsumerBaseV2 {
         s_lastTimeStamp = block.timestamp;
     }
 
-    function enterRaffle() external payable {
+    function enterRaffle() public payable {
+        //was external
         // require(msg.value >= i_entranceFee, "Not enough ETH sent");
         if (msg.value < i_entranceFee) {
             revert Raffle__notEnoughEthSent();
@@ -137,13 +139,15 @@ contract Raffle is VRFConsumerBaseV2 {
 
         // check to see if enough time is passed
         s_raffleState = RaffleState.CALCULATING;
-        i_vrfCoordinator.requestRandomWords(
+        uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_gasLane, // Gas lane
             i_subscriptionId,
             REQUEST_CONFIRMATIONS,
             i_callbackGasLimit,
             NUM_WORDS
         );
+        //Quiz: is this redundant? - Yes, beacuase it will be emitted in the fulfillRandomWords
+        emit RequestedRaffleWinner(requestId);
     }
 
     // CEI: Checks, Effects, Interaction
@@ -189,5 +193,17 @@ contract Raffle is VRFConsumerBaseV2 {
 
     function getPlayer(uint256 indexOfPlayer) external view returns (address) {
         return s_players[indexOfPlayer];
+    }
+
+    function getRecentWinner() external view returns (address) {
+        return s_recentWinner;
+    }
+
+    function getPlayersLength() external view returns (uint256) {
+        return s_players.length;
+    }
+
+    function getLastTimeStamp() external view returns (uint256) {
+        return s_lastTimeStamp;
     }
 }
